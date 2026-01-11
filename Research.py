@@ -19,6 +19,49 @@ import os
 
 # --- CONFIGURATION & SEEDS ---
 st.set_page_config(page_title="Multi-Model GRB Reconstructor", layout="wide")
+
+# --- AUTHENTICATION ---
+def check_password():
+    """Returns `True` if the user had the correct password."""
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if st.session_state["password"] == st.secrets["password"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # don't store password
+        else:
+            st.session_state["password_correct"] = False
+
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Detailed and welcoming sign-in page
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("# 🌌 GRB Research Portal")
+        st.markdown("### Welcome, Researcher!")
+        st.markdown("""
+        You are accessing the **Multi-Model Gamma-Ray Burst Light Curve Reconstructor**.
+        
+        This secure environment provides access to:
+        - 🧠 **Attention U-Net** Implementations
+        - 📈 **Quadratic Smoothing Spline** Models
+        - 📊 **Advanced Error Analysis**
+        
+        Please verify your credentials to proceed to the laboratory.
+        """)
+        st.divider()
+        st.text_input(
+            "🔐 Access Password", type="password", on_change=password_entered, key="password"
+        )
+        if "password_correct" in st.session_state:
+            st.error("😕 Access Denied: Incorrect Password")
+
+    return False
+
+if not check_password():
+    st.stop()
+
 seed_value = 42
 np.random.seed(seed_value)
 tf.random.set_seed(seed_value)
