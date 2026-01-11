@@ -1,0 +1,542 @@
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import requests
+import io
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.neural_network import MLPRegressor
+from scipy import stats as st_scipy
+from scipy.stats import norm
+import tensorflow as tf
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import (LSTM, Bidirectional, Dense, Dropout, 
+                                     Input, Conv1D, UpSampling1D, Concatenate,
+                                     MultiHeadAttention, LayerNormalization, Add)
+from tensorflow.keras import initializers
+from scipy.interpolate import UnivariateSpline
+import os
+
+# --- CONFIGURATION & SEEDS ---
+st.set_page_config(page_title="Multi-Model GRB Reconstructor", layout="wide")
+seed_value = 42
+np.random.seed(seed_value)
+tf.random.set_seed(seed_value)
+
+# --- EXPANDED CATALOG OF FAMOUS BURSTS ---
+# --- MAIN APPLICATION ---
+st.title("GRB Light Curve Reconstructor - Paper Implementations")
+
+# --- SIDEBAR CONTROLS ---
+st.sidebar.subheader("6. Paper Implementations")
+paper_model_select = st.sidebar.selectbox("Select Paper Model", 
+                                          ["None", 
+                                           "Model 1: Attention U-Net (GRB 231210B)",
+                                           "Model 2: Quadratic Smoothing Spline (QSS)",
+                                           "Model 3: Coming Soon"])
+
+run_paper_btn = False
+if paper_model_select == "Model 1: Attention U-Net (GRB 231210B)":
+    dataset_url = st.sidebar.text_input("Dataset URL (GitHub Raw)", 
+        value="https://raw.githubusercontent.com/Devanik21/Bi-LSTM-light-curve-reconstruction-sample/refs/heads/main/GRB%20Data/GRB231210B_trimmed.csv")
+    run_paper_btn = st.sidebar.button("Run Paper Model 1", type="primary")
+elif paper_model_select == "Model 2: Quadratic Smoothing Spline (QSS)":
+    dataset_url = st.sidebar.text_input("Dataset URL (GitHub Raw)", 
+        value="https://raw.githubusercontent.com/Devanik21/Bi-LSTM-light-curve-reconstruction-sample/refs/heads/main/GRB%20Data/GRB231210B_trimmed.csv",
+        key="qss_url")
+    run_paper_btn = st.sidebar.button("Run Paper Model 2", type="primary")
+if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210B)":
+    st.subheader("Paper Model 1: Attention U-Net on GRB 231210B")
+    
+    def AttentionBlock1D(x, g, inter_channels):
+        """Attention mechanism for U-Net"""
+        from tensorflow.keras.layers import Conv1D, ReLU
+        theta_x = Conv1D(inter_channels, kernel_size=1, strides=1, padding="same")(x)
+        phi_g = Conv1D(inter_channels, kernel_size=1, strides=1, padding="same")(g)
+        f = ReLU()(theta_x + phi_g)
+        psi_f = Conv1D(1, kernel_size=1, strides=1, padding="same", activation="sigmoid")(f)
+        return x * psi_f
+
+    def UNetWithAttention1D(input_shape):
+        """Attention U-Net architecture from paper"""
+        from tensorflow.keras.layers import (Conv1D, MaxPooling1D, UpSampling1D, 
+                                             Flatten, Dense, concatenate)
+        
+        inputs = Input(shape=input_shape)
+
+        # Encoder
+        conv1 = Conv1D(32, kernel_size=3, activation='relu', padding='same', 
+                      kernel_initializer='he_uniform')(inputs)
+        conv1 = Conv1D(32, kernel_size=3, activation='relu', padding='same', 
+                      kernel_initializer='he_uniform')(conv1)
+        pool1 = MaxPooling1D(pool_size=2, padding='same')(conv1)
+
+        conv2 = Conv1D(64, kernel_size=3, activation='relu', padding='same', 
+                      kernel_initializer='he_uniform')(pool1)
+        conv2 = Conv1D(64, kernel_size=3, activation='relu', padding='same', 
+                      kernel_initializer='he_uniform')(conv2)
+        pool2 = MaxPooling1D(pool_size=2, padding='same')(conv2)
+
+        conv3 = Conv1D(128, kernel_size=3, activation='relu', padding='same', 
+                      kernel_initializer='he_uniform')(pool2)
+        conv3 = Conv1D(128, kernel_size=3, activation='relu', padding='same', 
+                      kernel_initializer='he_uniform')(conv3)
+        pool3 = MaxPooling1D(pool_size=2, padding='same')(conv3)
+
+        # Bottleneck
+        bottleneck = Conv1D(256, kernel_size=3, activation='relu', padding='same', 
+                           kernel_initializer='he_uniform')(pool3)
+        bottleneck = Conv1D(256, kernel_size=3, activation='relu', padding='same', 
+                           kernel_initializer='he_uniform')(bottleneck)
+
+        # Decoder
+        upconv3 = UpSampling1D(size=2)(bottleneck)
+        attention3 = AttentionBlock1D(conv3, upconv3, inter_channels=64)
+        concat3 = concatenate([upconv3, attention3], axis=-1)
+        conv_dec3 = Conv1D(128, kernel_size=3, activation='relu', padding='same', 
+                          kernel_initializer='he_uniform')(concat3)
+        conv_dec3 = Conv1D(128, kernel_size=3, activation='relu', padding='same', 
+                          kernel_initializer='he_uniform')(conv_dec3)
+
+        upconv2 = UpSampling1D(size=2)(conv_dec3)
+        attention2 = AttentionBlock1D(conv2, upconv2, inter_channels=32)
+        concat2 = concatenate([upconv2, attention2], axis=-1)
+        conv_dec2 = Conv1D(64, kernel_size=3, activation='relu', padding='same', 
+                          kernel_initializer='he_uniform')(concat2)
+        conv_dec2 = Conv1D(64, kernel_size=3, activation='relu', padding='same', 
+                          kernel_initializer='he_uniform')(conv_dec2)
+
+        upconv1 = UpSampling1D(size=2)(conv_dec2)
+        attention1 = AttentionBlock1D(conv1, upconv1, inter_channels=16)
+        concat1 = concatenate([upconv1, attention1], axis=-1)
+        conv_dec1 = Conv1D(32, kernel_size=3, activation='relu', padding='same', 
+                          kernel_initializer='he_uniform')(concat1)
+        conv_dec1 = Conv1D(32, kernel_size=3, activation='relu', padding='same', 
+                          kernel_initializer='he_uniform')(conv_dec1)
+
+        outputs = Conv1D(1, kernel_size=1, activation=None)(conv_dec1)
+        outputs = Flatten()(outputs)
+        outputs = Dense(input_shape[0], activation="linear")(outputs)
+
+        model = Model(inputs, outputs)
+        return model
+    
+    def train_attention_unet():
+        with st.spinner("Loading data and training Attention U-Net model..."):
+            # Load Data
+            try:
+                if "username/repo" in dataset_url:
+                    st.warning("Using placeholder URL. Please update the Dataset URL in the sidebar.")
+                    t_mock = np.logspace(1, 5, 50)
+                    f_mock = 1e-10 * (t_mock**-1.5) * (1 + 0.1*np.random.randn(50))
+                    trimmed_data = pd.DataFrame({'t': t_mock, 'flux': f_mock, 
+                                                'pos_flux_err': 0.1*f_mock, 
+                                                'neg_flux_err': 0.1*f_mock})
+                else:
+                    response = requests.get(dataset_url)
+                    if response.status_code == 200:
+                        trimmed_data = pd.read_csv(io.StringIO(response.text))
+                    else:
+                        st.error(f"Failed to load data: HTTP {response.status_code}")
+                        return
+            except Exception as e:
+                st.error(f"Error: {e}")
+                return
+
+            grb_name = "GRB231210B"
+            
+            # Preprocessing
+            cols = trimmed_data.columns
+            t_col = next((c for c in cols if 'time' in c.lower() or 't' == c.lower()), cols[0])
+            f_col = next((c for c in cols if 'flux' in c.lower()), cols[1])
+
+            ts = trimmed_data[t_col].values
+            fluxes = trimmed_data[f_col].values
+            
+            mask = (ts > 0) & (fluxes > 0)
+            ts, fluxes = ts[mask], fluxes[mask]
+            
+            train_x_denorm = np.log10(ts)
+            train_y_denorm = np.log10(fluxes)
+            
+            # Error handling
+            pos_err_col = next((c for c in cols if 'pos' in c.lower() and 'flux' in c.lower()), None)
+            neg_err_col = next((c for c in cols if 'neg' in c.lower() and 'flux' in c.lower()), None)
+            
+            if pos_err_col and neg_err_col:
+                pos_flux_err = trimmed_data[pos_err_col].values[mask]
+                neg_flux_err = trimmed_data[neg_err_col].values[mask]
+                fluxes_error = (pos_flux_err - neg_flux_err) / 2
+                logfluxerrs = fluxes_error / (fluxes * np.log(10))
+                lower_err_log = logfluxerrs
+                upper_err_log = logfluxerrs
+            else:
+                fluxes_error = 0.1 * fluxes
+                logfluxerrs = fluxes_error / (fluxes * np.log(10))
+                lower_err_log = logfluxerrs
+                upper_err_log = logfluxerrs
+            
+            # Generate reconstruction points
+            gaps = np.diff(train_x_denorm)
+            min_gap = 0.05
+            recon_log_t = [train_x_denorm[0]]
+            total_span = train_x_denorm[-1] - train_x_denorm[0]
+            
+            fraction = 0.3 if len(ts) > 100 else 0.4
+            n_points = max(20, int(fraction * len(ts)))
+            
+            for i in range(len(ts) - 1):
+                gap_size = train_x_denorm[i+1] - train_x_denorm[i]
+                if gap_size > min_gap:
+                    interval_points = max(2, int(n_points * gap_size / total_span))
+                    interval = np.linspace(train_x_denorm[i], train_x_denorm[i+1], 
+                                         interval_points, endpoint=True)
+                    recon_log_t.extend(interval[1:])
+            
+            test_x_denorm = np.array(recon_log_t)
+            test_x_denorm = np.unique(test_x_denorm)
+            
+            # Build and train Attention U-Net
+            model = UNetWithAttention1D(input_shape=(1, 1))
+            model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='mse')
+            
+            X_train = train_x_denorm.reshape(-1, 1, 1)
+            y_train = train_y_denorm.reshape(-1, 1, 1)
+            
+            history = model.fit(X_train, y_train, epochs=500, verbose=0, batch_size=128)
+            
+            # Predictions
+            x_test = test_x_denorm.reshape(-1, 1, 1)
+            mean_prediction_denorm = model.predict(x_test, verbose=0).flatten()
+            
+            # Generate noise and confidence intervals
+            errparameters = st_scipy.norm.fit(logfluxerrs)
+            err_dist = st_scipy.norm(loc=errparameters[0], scale=errparameters[1])
+            recon_errorbar = err_dist.rvs(size=len(mean_prediction_denorm))
+            recon_errorbar = np.where(recon_errorbar < 0, 0, recon_errorbar)
+            
+            point_specific_noise = np.array([
+                st_scipy.norm(loc=pred, scale=err).rvs() - pred
+                for pred, err in zip(mean_prediction_denorm, recon_errorbar)
+            ])
+            
+            log_reconstructed_flux = mean_prediction_denorm + point_specific_noise
+            
+            # 95% CI
+            num_samples = 1000
+            random_samples = np.array([
+                st_scipy.norm(loc=0, scale=err).rvs(num_samples)
+                for err in recon_errorbar
+            ]).T
+            
+            jiggled_realizations = mean_prediction_denorm + random_samples
+            lower_denorm = np.percentile(jiggled_realizations, 2.5, axis=0)
+            upper_denorm = np.percentile(jiggled_realizations, 97.5, axis=0)
+            
+            # Plotting with EXACT format from document
+            fig = plt.figure(figsize=(10, 6))
+            
+            # a) Plot original data with updated y-errors
+            plt.errorbar(train_x_denorm, train_y_denorm, zorder=4, 
+                        yerr=[lower_err_log, upper_err_log], linestyle="")
+            
+            # b) Plot reconstructed points with synthetic error bars
+            plt.errorbar(test_x_denorm, log_reconstructed_flux, linestyle='none', 
+                        yerr=np.abs(recon_errorbar), marker='o', capsize=5, 
+                        color='yellow', zorder=3, label="Reconstructed Points")
+            
+            # c) Scatter original observed points on top
+            plt.scatter(train_x_denorm, train_y_denorm, zorder=5, label="Observed Points")
+            
+            # d) Plot the mean prediction curve
+            plt.plot(test_x_denorm, mean_prediction_denorm, label="Mean Prediction", zorder=2)
+            
+            # e) Add 95% confidence interval shading
+            plt.fill_between(test_x_denorm.flatten(), lower_denorm, upper_denorm, 
+                           alpha=0.5, color='orange', label="95% Confidence Region", zorder=1)
+            
+            plt.legend(loc='lower left')
+            plt.xlabel('log$_{10}$(Time) (s)', fontsize=15)
+            plt.ylabel('log$_{10}$(Flux) ($erg\\,cm^{-2}\\,s^{-1}$)', fontsize=15)
+            plt.title(f'Attention U-Net on {grb_name}', fontsize=18)
+            st.pyplot(fig)
+            
+            # Build combined DataFrame
+            combined_df = trimmed_data.copy(deep=True)
+            new_rows = []
+            for i in range(len(test_x_denorm)):
+                logt_pt = test_x_denorm[i]
+                t_lin = 10 ** logt_pt
+                pos_t_lin = 10 ** (logt_pt + 0.01 * logt_pt)
+                neg_t_lin = 10 ** (logt_pt - 0.01 * logt_pt)
+                flux_lin = 10 ** log_reconstructed_flux[i]
+                pos_f_lin = 10 ** (log_reconstructed_flux[i] + recon_errorbar[i])
+                neg_f_lin = 10 ** (log_reconstructed_flux[i] - recon_errorbar[i])
+                new_rows.append({
+                    "t": t_lin,
+                    "pos_t_err": abs(pos_t_lin - t_lin),
+                    "neg_t_err": abs(t_lin - neg_t_lin),
+                    "flux": flux_lin,
+                    "pos_flux_err": abs(pos_f_lin - flux_lin),
+                    "neg_flux_err": abs(flux_lin - neg_f_lin)
+                })
+            new_df = pd.DataFrame(new_rows)
+            combined_df = pd.concat([combined_df, new_df], ignore_index=True)
+            
+            st.success(f"Reconstruction Complete for {grb_name}")
+            st.caption(f"Final MSE: {history.history['loss'][-1]:.6f}")
+            csv_buffer = combined_df.to_csv(index=False).encode('utf-8')
+            st.download_button(label="Download Combined CSV", data=csv_buffer, 
+                             file_name=f"{grb_name}_attention_unet.csv", mime="text/csv")
+
+    train_attention_unet()
+
+
+elif run_paper_btn and paper_model_select == "Model 2: Quadratic Smoothing Spline (QSS)":
+    st.subheader("Paper Model 2: Quartic Smoothing Spline on GRB 231210B")
+    
+    def train_qss():
+        with st.spinner("Loading data and training Quartic Smoothing Spline..."):
+            # --- 1. Load Data (Streamlit specific adaptation) ---
+            try:
+                if "username/repo" in dataset_url:
+                    st.warning("Using placeholder URL. Please update the Dataset URL in the sidebar.")
+                    # Placeholder data generation for demo
+                    t_mock = np.logspace(1, 5, 50)
+                    f_mock = 1e-10 * (t_mock**-1.5) * (1 + 0.1*np.random.randn(50))
+                    trimmed_data = pd.DataFrame({
+                        't': t_mock, 'flux': f_mock, 
+                        'pos_flux_err': 0.1*f_mock, 'neg_flux_err': 0.1*f_mock,
+                        'pos_t_err': 0.01*t_mock, 'neg_t_err': 0.01*t_mock
+                    })
+                else:
+                    response = requests.get(dataset_url)
+                    if response.status_code == 200:
+                        trimmed_data = pd.read_csv(io.StringIO(response.text))
+                    else:
+                        st.error(f"Failed to load data: HTTP {response.status_code}")
+                        return
+            except Exception as e:
+                st.error(f"Error: {e}")
+                return
+
+            grb_name = "GRB231210B"
+            
+            # --- 2. Data Preprocessing (Matching run.py logic) ---
+            # Standardize column names
+            if len(trimmed_data.columns) == 6:
+                trimmed_data.columns = ["t", "pos_t_err", "neg_t_err", "flux", "pos_flux_err", "neg_flux_err"]
+            elif len(trimmed_data.columns) >= 7:
+                 # Handle potential index column
+                trimmed_data.columns = ["0", "t", "pos_t_err", "neg_t_err", "flux", "pos_flux_err", "neg_flux_err"][:len(trimmed_data.columns)]
+            
+            # Sort and extract
+            trimmed_data = trimmed_data.sort_values(by="t")
+            ts = trimmed_data["t"].to_numpy()
+            fluxes = trimmed_data["flux"].to_numpy()
+            
+            # Extract errors (Robust handling for missing error columns)
+            if "pos_t_err" in trimmed_data.columns:
+                positive_ts_err = trimmed_data["pos_t_err"].to_numpy()
+                negative_ts_err = trimmed_data["neg_t_err"].to_numpy()
+                positive_fluxes_err = trimmed_data["pos_flux_err"].to_numpy()
+                negative_fluxes_err = trimmed_data["neg_flux_err"].to_numpy()
+            else:
+                # Fallback if specific error columns are missing
+                positive_ts_err = 0.01 * ts
+                negative_ts_err = 0.01 * ts
+                positive_fluxes_err = 0.1 * fluxes
+                negative_fluxes_err = 0.1 * fluxes
+
+            # Filter valid data
+            mask = (ts > 0) & (fluxes > 0)
+            ts, fluxes = ts[mask], fluxes[mask]
+            positive_ts_err, negative_ts_err = positive_ts_err[mask], negative_ts_err[mask]
+            positive_fluxes_err, negative_fluxes_err = positive_fluxes_err[mask], negative_fluxes_err[mask]
+
+            # Log transformation
+            log_ts = np.log10(ts)
+            log_fluxes = np.log10(fluxes)
+
+            # Log-scale errors calculation
+            pos_fluxes = fluxes + positive_fluxes_err
+            neg_fluxes = fluxes + negative_fluxes_err
+            lower_err_log = log_fluxes - np.log10(neg_fluxes)
+            upper_err_log = np.log10(pos_fluxes) - log_fluxes
+            
+            # Synthetic sampling error prep
+            ts_err = (positive_ts_err - negative_ts_err) / 2.0
+            flux_err = (positive_fluxes_err - negative_fluxes_err) / 2.0
+            log_ts_err = ts_err / (ts * np.log(10))
+            log_flux_err = flux_err / (fluxes * np.log(10))
+
+            # --- 3. Normalization ---
+            log_ts_mean = np.mean(log_ts)
+            log_ts_std = np.std(log_ts)
+            log_flux_mean = np.mean(log_fluxes)
+            log_flux_std = np.std(log_fluxes)
+
+            log_ts_norm = (log_ts - log_ts_mean) / log_ts_std
+            log_flux_norm = (log_fluxes - log_flux_mean) / log_flux_std
+
+            # --- 4. Gap-Aware Grid Construction ---
+            min_gap = 0.05
+            recon_log_t = [log_ts[0]]
+            total_span = log_ts[-1] - log_ts[0]
+            
+            # Dynamic density based on dataset size
+            if len(ts) > 500: fraction = 0.05
+            elif len(ts) > 250: fraction = 0.1
+            elif len(ts) > 100: fraction = 0.3
+            else: fraction = 0.4
+            n_points = max(20, int(fraction * len(ts)))
+
+            for i in range(len(ts) - 1):
+                gap_size = log_ts[i+1] - log_ts[i]
+                if gap_size > min_gap:
+                    interval_points = max(2, int(n_points * gap_size / total_span))
+                    interval = np.linspace(log_ts[i], log_ts[i+1], interval_points, endpoint=True)
+                    recon_log_t.extend(interval[1:])
+            
+            recon_log_t = np.array(recon_log_t)
+            recon_t = 10**recon_log_t
+            recon_t = np.unique(recon_t)
+            log_recon_t = np.log10(recon_t).reshape(-1, 1)
+
+            # --- 5. Spline Fitting (Quartic k=4) ---
+            N = len(log_ts_norm)
+            spline = UnivariateSpline(
+                x=log_ts_norm.flatten(),
+                y=log_flux_norm.flatten(),
+                k=4,   # Quartic degree
+                s=N    # Smoothing factor
+            )
+
+            # Residuals for CI
+            pred_norm_train = spline(log_ts_norm.flatten())
+            resid_norm = log_flux_norm.flatten() - pred_norm_train
+            sigma_resid = np.std(resid_norm)
+
+            # Expand grid for large gaps (filling holes)
+            expanded = log_recon_t.copy()
+            for i in range(len(log_ts) - 1):
+                lowb = log_ts[i]
+                upb = log_ts[i + 1]
+                if np.abs(upb - lowb) >= 0.1:
+                    n_pts = min(5, int(5 * np.abs(upb - lowb) / 0.1))
+                    segment = np.linspace(lowb, upb, num=n_pts).reshape(-1, 1)
+                    expanded = np.vstack((expanded, segment))
+            expanded = np.sort(expanded, axis=0)
+
+            # Normalize expanded grid
+            expanded_norm = ((expanded - log_ts_mean) / log_ts_std).flatten()
+
+            # --- 6. Prediction & Error Simulation ---
+            mean_norm_recon = spline(expanded_norm)
+            
+            # 95% Confidence Interval
+            lower_norm_recon = mean_norm_recon - 1.96 * sigma_resid
+            upper_norm_recon = mean_norm_recon + 1.96 * sigma_resid
+
+            # Denormalize
+            mean_denorm_log = (mean_norm_recon * log_flux_std) + log_flux_mean
+            lower_denorm_log = (lower_norm_recon * log_flux_std) + log_flux_mean
+            upper_denorm_log = (upper_norm_recon * log_flux_std) + log_flux_mean
+
+            # Fit distribution to errors (Norm vs Laplace)
+            logfluxerrs = (positive_fluxes_err - negative_fluxes_err) / (2 * fluxes * np.log(10))
+            distributions = [st_scipy.norm, st_scipy.laplace]
+            fits = {}
+            for dist in distributions:
+                params = dist.fit(logfluxerrs)
+                loglikelihood = np.sum(dist.logpdf(logfluxerrs, *params))
+                fits[dist.name] = (params, loglikelihood)
+            
+            best_dist_name = max(fits, key=lambda d: fits[d][1])
+            best_params = fits[best_dist_name][0]
+            best_dist = getattr(st_scipy, best_dist_name)
+
+            # Generate synthetic noise
+            rand_noise = []
+            for j in range(len(mean_norm_recon)):
+                noise = 3.5 * (best_dist.rvs(*best_params, size=1)[0] - best_params[0])
+                rand_noise.append(noise)
+            rand_noise = np.array(rand_noise)
+
+            recon_norm_flux = mean_norm_recon + rand_noise
+            recon_denorm_log = (recon_norm_flux * log_flux_std) + log_flux_mean
+
+            # Sample synthetic error bars
+            loc_f, scale_f = st_scipy.norm.fit(log_flux_err)
+            sampled_flux_errs = st_scipy.norm(loc=loc_f, scale=scale_f).rvs(size=len(expanded))
+            
+            loc_t, scale_t = st_scipy.norm.fit(log_ts_err)
+            sampled_time_errs = st_scipy.norm(loc=loc_t, scale=scale_t).rvs(size=len(expanded))
+
+            # --- 7. Plotting (Streamlit adaptation) ---
+            # Prepare plotting variables
+            test_x_denorm = expanded.flatten()
+            log_reconstructed_flux = recon_denorm_log.flatten()
+            
+            fig = plt.figure(figsize=(10, 6))
+            
+            # a) Original data
+            plt.errorbar(log_ts, log_fluxes, yerr=[lower_err_log, upper_err_log], 
+                        zorder=4, linestyle="", fmt='none', ecolor='gray')
+            
+            # b) Reconstructed points
+            plt.errorbar(test_x_denorm, log_reconstructed_flux, 
+                        yerr=np.abs(sampled_flux_errs), linestyle='none', 
+                        marker='o', capsize=5, color='yellow', zorder=3, 
+                        label="Reconstructed Points")
+            
+            # c) Observed points scatter
+            plt.scatter(log_ts, log_fluxes, zorder=5, label="Observed Points", color='blue')
+            
+            # d) Mean prediction curve
+            plt.plot(test_x_denorm, mean_denorm_log, label="Mean Prediction", zorder=2, color='green')
+            
+            # e) 95% Confidence Region
+            plt.fill_between(test_x_denorm, lower_denorm_log, upper_denorm_log, 
+                           alpha=0.5, color='orange', label="95% Confidence Region", zorder=1)
+            
+            plt.legend(loc='lower left')
+            plt.xlabel('log$_{10}$(Time) (s)', fontsize=15)
+            plt.ylabel('log$_{10}$(Flux) ($erg\\,cm^{-2}\\,s^{-1}$)', fontsize=15)
+            plt.title(f'Quartic Smoothing Spline on {grb_name}', fontsize=18)
+            
+            st.pyplot(fig)
+
+            # --- 8. Export Data ---
+            combined_df = trimmed_data.copy(deep=True)
+            new_rows = []
+            for i in range(len(expanded)):
+                logt_pt = expanded[i][0]
+                t_lin = 10 ** logt_pt
+                
+                # Synthetic linear errors
+                pos_t_lin = 10 ** (logt_pt + sampled_time_errs[i])
+                neg_t_lin = 10 ** (logt_pt - sampled_time_errs[i])
+                
+                flux_lin = 10 ** recon_denorm_log[i]
+                pos_f_lin = 10 ** (recon_denorm_log[i] + sampled_flux_errs[i])
+                neg_f_lin = 10 ** (recon_denorm_log[i] - sampled_flux_errs[i])
+                
+                new_rows.append({
+                    "t": t_lin,
+                    "pos_t_err": abs(pos_t_lin - t_lin),
+                    "neg_t_err": abs(t_lin - neg_t_lin),
+                    "flux": flux_lin,
+                    "pos_flux_err": abs(pos_f_lin - flux_lin),
+                    "neg_flux_err": abs(flux_lin - neg_f_lin)
+                })
+            
+            new_df = pd.DataFrame(new_rows)
+            combined_df = pd.concat([combined_df, new_df], ignore_index=True)
+            
+            st.success(f"Reconstruction Complete for {grb_name}")
+            csv_buffer = combined_df.to_csv(index=False).encode('utf-8')
+            st.download_button(label="Download Combined CSV", data=csv_buffer, 
+                             file_name=f"{grb_name}_quartic_spline.csv", mime="text/csv")
+    
+    train_qss()
