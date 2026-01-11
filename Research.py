@@ -401,9 +401,9 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
             with st.expander("Cite this Implementation"):
                 st.code("""@article{GRBReconstruction2024,
   title={Multi-Model Light Curve Reconstruction for Gamma-Ray Bursts},
-  author={Research Team},
+  author={Research Team NAOJ},
   journal={Astrophysical Data Analysis},
-  year={2024}
+  year={2026}
 }""", language="tex")
 
     train_attention_unet()
