@@ -73,7 +73,7 @@ tf.random.set_seed(seed_value)
 st.title("GRB Light Curve Reconstructor - Paper Implementations")
 
 # --- SIDEBAR CONTROLS ---
-st.sidebar.subheader("6. Paper Implementations")
+st.sidebar.subheader("Paper Implementations")
 paper_model_select = st.sidebar.selectbox("Select Paper Model", 
                                           ["None", 
                                            "Model 1: Attention U-Net (GRB 231210B)",
