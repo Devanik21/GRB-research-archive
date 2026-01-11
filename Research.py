@@ -47,7 +47,7 @@ def check_password():
             
             This secure environment provides access to:
             *   **Attention U-Net** Implementations
-            *   **Quadratic Smoothing Spline** Models
+            *   **Quartic Smoothing Spline** Models
             *   **Advanced Error Analysis**
             
             Please verify your credentials to proceed to the laboratory.
@@ -77,7 +77,7 @@ st.sidebar.subheader("6. Paper Implementations")
 paper_model_select = st.sidebar.selectbox("Select Paper Model", 
                                           ["None", 
                                            "Model 1: Attention U-Net (GRB 231210B)",
-                                           "Model 2: Quadratic Smoothing Spline (QSS)",
+                                           "Model 2: Quartic Smoothing Spline (QSS)",
                                            "Model 3: Coming Soon"])
 
 # --- UI FEATURE 1: Advanced Configuration (Sidebar) ---
@@ -96,7 +96,7 @@ if paper_model_select == "Model 1: Attention U-Net (GRB 231210B)":
     dataset_url = st.sidebar.text_input("Dataset URL (GitHub Raw)", 
         value="https://raw.githubusercontent.com/Devanik21/Bi-LSTM-light-curve-reconstruction-sample/refs/heads/main/GRB%20Data/GRB231210B_trimmed.csv")
     run_paper_btn = st.sidebar.button("Run Paper Model 1", type="primary")
-elif paper_model_select == "Model 2: Quadratic Smoothing Spline (QSS)":
+elif paper_model_select == "Model 2: Quartic Smoothing Spline (QSS)":
     dataset_url = st.sidebar.text_input("Dataset URL (GitHub Raw)", 
         value="https://raw.githubusercontent.com/Devanik21/Bi-LSTM-light-curve-reconstruction-sample/refs/heads/main/GRB%20Data/GRB231210B_trimmed.csv",
         key="qss_url")
@@ -408,7 +408,7 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
     train_attention_unet()
 
 
-elif run_paper_btn and paper_model_select == "Model 2: Quadratic Smoothing Spline (QSS)":
+elif run_paper_btn and paper_model_select == "Model 2: Quartic Smoothing Spline (QSS)":
     st.subheader("Paper Model 2: Quartic Smoothing Spline on GRB 231210B")
     
     with st.expander("📄 Methodology Overview", expanded=True):
