@@ -38,15 +38,15 @@ def check_password():
     # Detailed and welcoming sign-in page
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("# 🌌 GRB Research Portal")
+        st.markdown("# GRB Research Portal")
         st.markdown("### Welcome, Researcher!")
         st.markdown("""
         You are accessing the **Multi-Model Gamma-Ray Burst Light Curve Reconstructor**.
         
         This secure environment provides access to:
-        - 🧠 **Attention U-Net** Implementations
-        - 📈 **Quadratic Smoothing Spline** Models
-        - 📊 **Advanced Error Analysis**
+        - **Attention U-Net** Implementations
+        - **Quadratic Smoothing Spline** Models
+        - **Advanced Error Analysis**
         
         Please verify your credentials to proceed to the laboratory.
         """)
