@@ -18,7 +18,7 @@ from scipy.interpolate import UnivariateSpline
 import os
 
 # --- CONFIGURATION & SEEDS ---
-st.set_page_config(page_title="Multi-Model GRB Reconstructor", layout="wide")
+st.set_page_config(page_title="Multi-Model GRB Reconstructor", page_icon="🔭", layout="wide")
 
 # --- AUTHENTICATION ---
 def check_password():
@@ -38,24 +38,25 @@ def check_password():
     # Detailed and welcoming sign-in page
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("# GRB Research Portal")
-        st.markdown("### Welcome, Researcher!")
-        st.markdown("""
-        You are accessing the **Multi-Model Gamma-Ray Burst Light Curve Reconstructor**.
-        
-        This secure environment provides access to:
-        - **Attention U-Net** Implementations
-        - **Quadratic Smoothing Spline** Models
-        - **Advanced Error Analysis**
-        
-        Please verify your credentials to proceed to the laboratory.
-        """)
-        st.divider()
-        st.text_input(
-            "🔐 Access Password", type="password", on_change=password_entered, key="password"
-        )
-        if "password_correct" in st.session_state:
-            st.error("😕 Access Denied: Incorrect Password")
+        with st.container(border=True):
+            st.markdown("<h1 style='text-align: center; color: #2E86C1;'>GRB Research Portal</h1>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align: center;'>Restricted Access</h3>", unsafe_allow_html=True)
+            st.markdown("""
+            You are accessing the **Multi-Model Gamma-Ray Burst Light Curve Reconstructor**.
+            
+            This secure environment provides access to:
+            *   **Attention U-Net** Implementations
+            *   **Quadratic Smoothing Spline** Models
+            *   **Advanced Error Analysis**
+            
+            Please verify your credentials to proceed to the laboratory.
+            """)
+            st.divider()
+            st.text_input(
+                "Password", type="password", on_change=password_entered, key="password"
+            )
+            if "password_correct" in st.session_state:
+                st.error("Access Denied: Incorrect Password")
 
     return False
 
@@ -71,7 +72,7 @@ tf.random.set_seed(seed_value)
 st.title("GRB Light Curve Reconstructor - Paper Implementations")
 
 # --- SIDEBAR CONTROLS ---
-st.sidebar.subheader(" Paper Implementations")
+st.sidebar.subheader("6. Paper Implementations")
 paper_model_select = st.sidebar.selectbox("Select Paper Model", 
                                           ["None", 
                                            "Model 1: Attention U-Net (GRB 231210B)",
