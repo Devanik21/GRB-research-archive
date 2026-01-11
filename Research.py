@@ -19,7 +19,7 @@ import os
 import time
 
 # --- CONFIGURATION & SEEDS ---
-st.set_page_config(page_title="Multi-Model GRB Reconstructor", page_icon="🔭", layout="wide")
+st.set_page_config(page_title="Multi-Model GRB Reconstructor", layout="wide")
 
 # --- AUTHENTICATION ---
 def check_password():
@@ -73,7 +73,7 @@ tf.random.set_seed(seed_value)
 st.title("GRB Light Curve Reconstructor - Paper Implementations")
 
 # --- SIDEBAR CONTROLS ---
-st.sidebar.subheader(" Paper Implementations")
+st.sidebar.subheader("6. Paper Implementations")
 paper_model_select = st.sidebar.selectbox("Select Paper Model", 
                                           ["None", 
                                            "Model 1: Attention U-Net (GRB 231210B)",
@@ -81,7 +81,7 @@ paper_model_select = st.sidebar.selectbox("Select Paper Model",
                                            "Model 3: Coming Soon"])
 
 # --- UI FEATURE 1: Advanced Configuration (Sidebar) ---
-with st.sidebar.expander("⚙️ Advanced Configuration"):
+with st.sidebar.expander("Advanced Configuration"):
     if "Attention U-Net" in paper_model_select:
         conf_epochs = st.slider("Training Epochs", 100, 1000, 500, step=50, help="Number of passes through the entire training dataset.")
         conf_batch = st.selectbox("Batch Size", [32, 64, 128, 256], index=2, help="Number of samples per gradient update.")
@@ -106,7 +106,7 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
     st.subheader("Paper Model 1: Attention U-Net on GRB 231210B")
     
     # --- UI FEATURE 2: Paper Context ---
-    with st.expander("📄 Methodology Overview", expanded=True):
+    with st.expander("Methodology Overview", expanded=True):
         st.markdown("""
         **Abstract:** This implementation utilizes a 1D Attention U-Net architecture to reconstruct Gamma-Ray Burst light curves. 
         The model employs an encoder-decoder structure with skip connections gated by attention mechanisms to focus on relevant temporal features.
@@ -211,7 +211,7 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
                 return
 
             # --- UI FEATURE 3: Data Inspection ---
-            with st.expander("🔍 Inspect Input Data"):
+            with st.expander("Inspect Input Data"):
                 st.dataframe(trimmed_data.head(), use_container_width=True)
                 st.caption(f"Loaded {len(trimmed_data)} rows. Columns: {list(trimmed_data.columns)}")
 
@@ -276,7 +276,7 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
             y_train = train_y_denorm.reshape(-1, 1, 1)
             
             # --- UI FEATURE 4: Model Architecture ---
-            with st.expander("🧠 Model Architecture Details"):
+            with st.expander("Model Architecture Details"):
                 string_io = io.StringIO()
                 model.summary(print_fn=lambda x: string_io.write(x + '\n'))
                 st.code(string_io.getvalue(), language='text')
@@ -345,10 +345,10 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
             fn = f"{grb_name}_attention_unet_plot.pdf"
             img = io.BytesIO()
             plt.savefig(img, format='pdf', bbox_inches='tight')
-            st.download_button(label="📥 Download High-Res Plot (PDF)", data=img, file_name=fn, mime="application/pdf")
+            st.download_button(label="Download High-Res Plot (PDF)", data=img, file_name=fn, mime="application/pdf")
             
             # --- UI FEATURE 6: Detailed Metrics Dashboard ---
-            st.markdown("### 📊 Performance Metrics")
+            st.markdown("### Performance Metrics")
             col1, col2, col3 = st.columns(3)
             mse_val = history.history['loss'][-1]
             col1.metric("Final MSE", f"{mse_val:.6f}")
@@ -356,11 +356,11 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
             col3.metric("Reconstructed Points", len(test_x_denorm))
             
             # --- UI FEATURE 7: Training History ---
-            with st.expander("📈 Training Loss Curve"):
+            with st.expander("Training Loss Curve"):
                 st.line_chart(history.history['loss'])
                 
             # --- UI FEATURE 8: Residual Analysis ---
-            with st.expander("📉 Residual Analysis"):
+            with st.expander("Residual Analysis"):
                 residuals = train_y_denorm.flatten() - model.predict(X_train, verbose=0).flatten()
                 fig_res, ax_res = plt.subplots(figsize=(10, 2))
                 ax_res.scatter(train_x_denorm, residuals, alpha=0.6)
@@ -393,12 +393,12 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
             st.success(f"Reconstruction Complete for {grb_name}")
             st.caption(f"Final MSE: {history.history['loss'][-1]:.6f}")
             csv_buffer = combined_df.to_csv(index=False).encode('utf-8')
-            st.download_button(label="📥 Download Combined Data (CSV)", data=csv_buffer, 
+            st.download_button(label="Download Combined Data (CSV)", data=csv_buffer, 
                              file_name=f"{grb_name}_attention_unet.csv", mime="text/csv")
             
             # --- UI FEATURE 9: Citation ---
             st.markdown("---")
-            with st.expander("📚 Cite this Implementation"):
+            with st.expander("Cite this Implementation"):
                 st.code("""@article{GRBReconstruction2024,
   title={Multi-Model Light Curve Reconstruction for Gamma-Ray Bursts},
   author={Research Team},
@@ -412,7 +412,7 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
 elif run_paper_btn and paper_model_select == "Model 2: Quartic Smoothing Spline (QSS)":
     st.subheader("Paper Model 2: Quartic Smoothing Spline on GRB 231210B")
     
-    with st.expander("📄 Methodology Overview", expanded=True):
+    with st.expander("Methodology Overview", expanded=True):
         st.markdown("""
         **Abstract:** This model applies a Quartic (k=4) Smoothing Spline to approximate the GRB light curve. 
         It balances the trade-off between fitting the data points and maintaining curve smoothness, controlled by the smoothing factor $s$.
@@ -444,7 +444,7 @@ elif run_paper_btn and paper_model_select == "Model 2: Quartic Smoothing Spline 
                 st.error(f"Error: {e}")
                 return
 
-            with st.expander("🔍 Inspect Input Data"):
+            with st.expander("Inspect Input Data"):
                 st.dataframe(trimmed_data.head(), use_container_width=True)
                 st.caption(f"Loaded {len(trimmed_data)} rows.")
 
@@ -641,15 +641,15 @@ elif run_paper_btn and paper_model_select == "Model 2: Quartic Smoothing Spline 
             fn = f"{grb_name}_qss_plot.pdf"
             img = io.BytesIO()
             plt.savefig(img, format='pdf', bbox_inches='tight')
-            st.download_button(label="📥 Download High-Res Plot (PDF)", data=img, file_name=fn, mime="application/pdf")
+            st.download_button(label="Download High-Res Plot (PDF)", data=img, file_name=fn, mime="application/pdf")
 
-            st.markdown("### 📊 Performance Metrics")
+            st.markdown("### Performance Metrics")
             col1, col2, col3 = st.columns(3)
             col1.metric("Residual Std Dev", f"{sigma_resid:.6f}")
             col2.metric("Execution Time", f"{end_time - start_time:.2f} s")
             col3.metric("Smoothing Factor (s)", f"{N * conf_s_mult:.1f}")
 
-            with st.expander("📉 Residual Analysis"):
+            with st.expander("Residual Analysis"):
                 fig_res, ax_res = plt.subplots(figsize=(10, 2))
                 ax_res.scatter(log_ts_norm.flatten(), resid_norm, alpha=0.6, color='green')
                 ax_res.axhline(0, color='r', linestyle='--')
@@ -685,11 +685,11 @@ elif run_paper_btn and paper_model_select == "Model 2: Quartic Smoothing Spline 
             
             st.success(f"Reconstruction Complete for {grb_name}")
             csv_buffer = combined_df.to_csv(index=False).encode('utf-8')
-            st.download_button(label="📥 Download Combined Data (CSV)", data=csv_buffer, 
+            st.download_button(label="Download Combined Data (CSV)", data=csv_buffer, 
                              file_name=f"{grb_name}_quartic_spline.csv", mime="text/csv")
             
             st.markdown("---")
-            with st.expander("📚 Cite this Implementation"):
+            with st.expander("Cite this Implementation"):
                 st.code("""@article{GRBReconstruction2024,
   title={Spline-Based Approaches for GRB Light Curve Reconstruction},
   author={Research Team},
