@@ -528,7 +528,7 @@ elif run_paper_btn and paper_model_select == "Model 2: Quartic Smoothing Spline 
                 x=log_ts_norm.flatten(),
                 y=log_flux_norm.flatten(),
                 #k=conf_k,   # Configurable degree
-                s=N * conf_s_mult    # Configurable Smoothing factor
+                #s=N * conf_s_mult    # Configurable Smoothing factor
             )
 
             # Residuals for CI
