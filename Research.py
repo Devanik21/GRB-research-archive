@@ -351,13 +351,7 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
                 st.line_chart(history.history['loss'])
                 
             # --- UI FEATURE 8: Residual Analysis ---
-            with st.expander("Residual Analysis"):
-                residuals = train_y_denorm.flatten() - model.predict(X_train, verbose=0).flatten()
-                fig_res, ax_res = plt.subplots(figsize=(10, 2))
-                ax_res.scatter(train_x_denorm, residuals, alpha=0.6)
-                ax_res.axhline(0, color='r', linestyle='--')
-                ax_res.set_title("Residuals (Observed - Predicted)")
-                st.pyplot(fig_res)
+
             
             # Build combined DataFrame
             combined_df = trimmed_data.copy(deep=True)
@@ -640,12 +634,6 @@ elif run_paper_btn and paper_model_select == "Model 2: Quartic Smoothing Spline 
             col2.metric("Execution Time", f"{end_time - start_time:.2f} s")
             #col3.metric("Smoothing Factor (s)", f"{N * conf_s_mult:.1f}")
 
-            with st.expander("Residual Analysis"):
-                fig_res, ax_res = plt.subplots(figsize=(10, 2))
-                ax_res.scatter(log_ts_norm.flatten(), resid_norm, alpha=0.6, color='green')
-                ax_res.axhline(0, color='r', linestyle='--')
-                ax_res.set_title("Normalized Residuals")
-                st.pyplot(fig_res)
 
             # --- 8. Export Data ---
             combined_df = trimmed_data.copy(deep=True)
