@@ -80,16 +80,7 @@ paper_model_select = st.sidebar.selectbox("Select Paper Model",
                                            "Model 2: Quartic Smoothing Spline (QSS)",
                                            "Model 3: Coming Soon"])
 
-# --- UI FEATURE 1: Advanced Configuration (Sidebar) ---
-with st.sidebar.expander("Advanced Configuration"):
-    if "Attention U-Net" in paper_model_select:
-        conf_epochs = st.slider("Training Epochs", 100, 1000, 500, step=50, help="Number of passes through the entire training dataset.")
-        conf_batch = st.selectbox("Batch Size", [32, 64, 128, 256], index=2, help="Number of samples per gradient update.")
-    elif "Quartic Smoothing" in paper_model_select:
-        conf_k = st.slider("Spline Degree (k)", 3, 5, 4, help="Degree of the smoothing spline. 3=Cubic, 4=Quartic, 5=Quintic.")
-        conf_s_mult = st.slider("Smoothing Factor Multiplier", 0.1, 2.0, 1.0, step=0.1, help="Adjusts the smoothing parameter s (s = N * multiplier).")
-    else:
-        st.info("Select a model to configure parameters.")
+
 
 run_paper_btn = False
 if paper_model_select == "Model 1: Attention U-Net (GRB 231210B)":
