@@ -635,10 +635,10 @@ elif run_paper_btn and paper_model_select == "Model 2: Quartic Smoothing Spline 
             st.download_button(label="Download High-Res Plot (PDF)", data=img, file_name=fn, mime="application/pdf")
 
             st.markdown("### Performance Metrics")
-            col1, col2, col3 = st.columns(3)
+            col1, col2,  = st.columns(2)
             col1.metric("Residual Std Dev", f"{sigma_resid:.6f}")
             col2.metric("Execution Time", f"{end_time - start_time:.2f} s")
-            col3.metric("Smoothing Factor (s)", f"{N * conf_s_mult:.1f}")
+            #col3.metric("Smoothing Factor (s)", f"{N * conf_s_mult:.1f}")
 
             with st.expander("Residual Analysis"):
                 fig_res, ax_res = plt.subplots(figsize=(10, 2))
