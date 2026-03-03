@@ -73,12 +73,27 @@ tf.random.set_seed(seed_value)
 st.title("GRB Light Curve Reconstructor - Paper Implementations")
 
 # --- SIDEBAR CONTROLS ---
+# --- SIDEBAR CONTROLS ---
 st.sidebar.subheader("Paper Implementations")
+
+# Add these lines for hyperparameter control
+st.sidebar.markdown("### Model Hyperparameters")
+conf_epochs = st.sidebar.number_input("Training Epochs", min_value=1, max_value=2000, value=500, step=50)
+conf_batch = st.sidebar.number_input("Batch Size", min_value=1, max_value=256, value=32, step=1)
+
+# Specifically for Model 2 (QSS) tuning
+conf_k = 4
+conf_s_mult = 1.0
+if paper_model_select == "Model 2: Quartic Smoothing Spline (QSS)":
+    conf_k = st.sidebar.slider("Spline Degree (k)", 1, 5, 4)
+    conf_s_mult = st.sidebar.slider("Smoothing Multiplier", 0.0, 10.0, 1.0, 0.1)
+
 paper_model_select = st.sidebar.selectbox("Select Paper Model", 
                                           ["None", 
                                            "Model 1: Attention U-Net (GRB 231210B)",
                                            "Model 2: Quartic Smoothing Spline (QSS)",
                                            "Model 3: Coming Soon"])
+
 
 
 
@@ -524,14 +539,14 @@ elif run_paper_btn and paper_model_select == "Model 2: Quartic Smoothing Spline 
             log_recon_t = np.log10(recon_t).reshape(-1, 1)
 
             # --- 5. Spline Fitting (Quartic k=4) ---
+            # --- 5. Spline Fitting (Quartic k=4) ---
             N = len(log_ts_norm)
             spline = UnivariateSpline(
                 x=log_ts_norm.flatten(),
                 y=log_flux_norm.flatten(),
-                #k=conf_k,   # Configurable degree
-                #s=N * conf_s_mult    # Configurable Smoothing factor
+                k=conf_k,   # Updated to use sidebar variable
+                s=N * conf_s_mult    # Updated to use sidebar variable
             )
-
             # Residuals for CI
             pred_norm_train = spline(log_ts_norm.flatten())
             resid_norm = log_flux_norm.flatten() - pred_norm_train
