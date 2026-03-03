@@ -71,12 +71,6 @@ tf.random.set_seed(seed_value)
 # --- SIDEBAR CONTROLS ---
 st.sidebar.subheader("Paper Implementations")
 
-# 1. Define the model selection FIRST
-paper_model_select = st.sidebar.selectbox("Select Paper Model", 
-                                          ["None", 
-                                           "Model 1: Attention U-Net (GRB 231210B)",
-                                           "Model 2: Quartic Smoothing Spline (QSS)",
-                                           "Model 3: Coming Soon"])
 
 # 2. Define global hyperparameters
 st.sidebar.markdown("### Model Hyperparameters")
