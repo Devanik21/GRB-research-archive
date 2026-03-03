@@ -384,11 +384,18 @@ if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210
             # --- UI FEATURE 9: Citation ---
             st.markdown("---")
             with st.expander("Cite this Implementation"):
-                st.code("""@article{GRBReconstruction2024,
-  title={Multi-Model Light Curve Reconstruction for Gamma-Ray Bursts},
-  author={Research Team NAOJ},
-  journal={Astrophysical Data Analysis},
-  year={2026}
+                st.code("""@article{KAUSHAL2025100519,
+title = {Multi-Model Framework for Reconstructing Gamma-Ray Burst Light Curves},
+journal = {Journal of High Energy Astrophysics},
+pages = {100519},
+year = {2025},
+issn = {2214-4048},
+doi = {https://doi.org/10.1016/j.jheap.2025.100519},
+url = {https://www.sciencedirect.com/science/article/pii/S2214404825002009},
+author = {A. Kaushal and A. Manchanda and M.G. Dainotti and K. Gupta and Z. Nogala and A. Madhan and S. Naqi and Ritik Kumar and V. Oad and N. Indoriya and Krishnanjan Sil and D.H. Hartmann and M. Bogdan and A. Pollo and J.X. Prochaska and N. Fraija},
+keywords = {-ray bursts, statistical methods, machine learning, light curve reconstruction},
+abstract = {Mitigating data gaps in Gamma-ray bursts (GRBs) light curves (LCs) is crucial for cosmological research, enhancing the precision of parameters, assuming perfect satellite conditions for complete LC coverage with no gaps. This analysis improves the applicability of the two-dimensional Dainotti relation, which connects the rest-frame end time of the plateau emission (Ta) and its luminosity (La), derived from the fluxes (Fa). The study expands on a previous 521 GRB sample by incorporating seven models: Deep Gaussian Process (DGP), Temporal Convolutional Network (TCN), Hybrid CNN with Bidirectional Long Short-Term Memory (CNN-BiLSTM), Bayesian Neural Network (BNN), Polynomial Curve Fitting, Isotonic Regression, and Quartic Smoothing Spline (QSS). Results indicate that QSS significantly reduces uncertainty across parametersâ€“43.5% for logâ€‰Ta, 43.2% for logâ€‰Fa, and 48.3% for Î±, outperforming the other models where Î± denotes the slope post-plateau based on Willingaleâ€™s 2007 functional form. The Polynomial Curve Fitting model demonstrates moderate uncertainty reduction across parameters, while CNN-BiLSTM has the lowest outlier rate for Î± at 0.77%. These models broaden the application of machine-learning techniques in GRB LC analysis, enhancing uncertainty estimation and parameter recovery, and complement traditional methods like the Attention U-Net and Multilayer Perceptron (MLP). These advancements highlight the potential of GRBs as cosmological probes, supporting their role in theoretical model discrimination via LC parameters, serving as standard candles, and facilitating GRB redshift predictions through advanced machine-learning approaches.}
+}
 }""", language="tex")
 
     train_attention_unet()
