@@ -68,25 +68,31 @@ seed_value = 42
 np.random.seed(seed_value)
 tf.random.set_seed(seed_value)
 
-# --- EXPANDED CATALOG OF FAMOUS BURSTS ---
-# --- MAIN APPLICATION ---
-st.title("GRB Light Curve Reconstructor - Paper Implementations")
-
-# --- SIDEBAR CONTROLS ---
 # --- SIDEBAR CONTROLS ---
 st.sidebar.subheader("Paper Implementations")
 
-# Add these lines for hyperparameter control
+# 1. Define the model selection FIRST
+paper_model_select = st.sidebar.selectbox("Select Paper Model", 
+                                          ["None", 
+                                           "Model 1: Attention U-Net (GRB 231210B)",
+                                           "Model 2: Quartic Smoothing Spline (QSS)",
+                                           "Model 3: Coming Soon"])
+
+# 2. Define global hyperparameters
 st.sidebar.markdown("### Model Hyperparameters")
 conf_epochs = st.sidebar.number_input("Training Epochs", min_value=1, max_value=2000, value=500, step=50)
 conf_batch = st.sidebar.number_input("Batch Size", min_value=1, max_value=256, value=32, step=1)
 
-# Specifically for Model 2 (QSS) tuning
+# 3. Define QSS-specific parameters with defaults
 conf_k = 4
 conf_s_mult = 1.0
+
+# 4. Update QSS parameters ONLY if Model 2 is selected
 if paper_model_select == "Model 2: Quartic Smoothing Spline (QSS)":
     conf_k = st.sidebar.slider("Spline Degree (k)", 1, 5, 4)
     conf_s_mult = st.sidebar.slider("Smoothing Multiplier", 0.0, 10.0, 1.0, 0.1)
+
+
 
 paper_model_select = st.sidebar.selectbox("Select Paper Model", 
                                           ["None", 
