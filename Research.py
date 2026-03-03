@@ -98,7 +98,7 @@ paper_model_select = st.sidebar.selectbox("Select Paper Model",
                                           ["None", 
                                            "Model 1: Attention U-Net (GRB 231210B)",
                                            "Model 2: Quartic Smoothing Spline (QSS)",
-                                           "Model 3: Coming Soon"])
+                                           "Model 3: Coming Soon"],key="model_selector_primary")
 
 
 
