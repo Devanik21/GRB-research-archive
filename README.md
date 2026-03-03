@@ -178,7 +178,7 @@ year = {2025},
 issn = {2214-4048},
 doi = {https://doi.org/10.1016/j.jheap.2025.100519},
 url = {https://www.sciencedirect.com/science/article/pii/S2214404825002009},
-author = {A. Kaushal and A. Manchanda and M.G. Dainotti and K. Gupta and Z. Nogala and A. Madhan and S. Naqi and Ritik Kumar and V. Oad and N. Indoriya and Krishnanjan Sil and D.H. Hartmann and M. Bogdan and A. Pollo and J.X. Prochaska and N. Fraija and D.Debnath},
+author = {A. Kaushal and A. Manchanda and M.G. Dainotti and K. Gupta and Z. Nogala and A. Madhan and S. Naqi and Ritik Kumar and V. Oad and N. Indoriya and Krishnanjan Sil and D.H. Hartmann and M. Bogdan and A. Pollo and J.X. Prochaska and N. Fraija and D. Debnath},
 keywords = {γ-ray bursts, statistical methods, machine learning, light curve reconstruction},
 }
 ```
