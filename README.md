@@ -1,5 +1,5 @@
 
-# Multi-Model GRB Light Curve Reconstructor
+# Multi-Model GRB Light Curve Reconstructor 
 
 **A Unified Computational Framework for Temporal Reconstruction and Gap Mitigation in Gamma-Ray Burst Light Curves**
 
