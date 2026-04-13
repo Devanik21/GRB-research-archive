@@ -21,6 +21,35 @@ import time
 # --- CONFIGURATION & SEEDS ---
 st.set_page_config(page_title="Multi-Model GRB Reconstructor", layout="wide",page_icon="🌌")
 
+# ====================== CUSTOM NEON GREEN BUTTON STYLE ======================
+st.markdown("""
+    <style>
+    /* Target primary buttons (the ones with type="primary") */
+    div.stButton > button[kind="primary"] {
+        background-color: #1a1a1a !important;     /* Dark background */
+        color: #00ff9d !important;                /* Neon green text */
+        border: 2px solid #00ff9d !important;     /* Neon green border */
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        padding: 0.6rem 1.2rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 0 15px rgba(0, 255, 157, 0.4) !important;
+    }
+    
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #00ff9d !important;
+        color: #000000 !important;                /* Black text on hover */
+        box-shadow: 0 0 25px rgba(0, 255, 157, 0.8) !important;
+        transform: translateY(-2px);
+    }
+    
+    /* Optional: Make secondary buttons also look consistent */
+    div.stButton > button {
+        border-radius: 8px !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- AUTHENTICATION ---
 def check_password():
     """Returns `True` if the user had the correct password."""
