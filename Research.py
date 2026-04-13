@@ -51,83 +51,7 @@ st.markdown("""
 
 
 
-# ====================== WELCOME / LANDING PAGE WHEN NONE SELECTED ======================
-if paper_model_select == "None":
-    st.markdown("""
-        <style>
-        .welcome-title {
-            font-size: 3.2rem;
-            font-weight: 700;
-            background: linear-gradient(90deg, #00ff9d, #00b8ff, #9d4edd);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        .welcome-subtitle {
-            font-size: 1.4rem;
-            color: #a0a0a0;
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .math-box {
-            background: rgba(30, 30, 40, 0.8);
-            border: 1px solid #00ff9d;
-            border-radius: 12px;
-            padding: 1.8rem;
-            margin: 1.5rem 0;
-        }
-        </style>
-    """, unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown('<h1 class="welcome-title">Multi-Model GRB Light Curve Reconstructor</h1>', unsafe_allow_html=True)
-        st.markdown('<p class="welcome-subtitle">Advanced Reconstruction of Gamma-Ray Burst Temporal Profiles</p>', unsafe_allow_html=True)
-
-        st.divider()
-
-        st.markdown("""
-        ### Welcome to the Laboratory
-        
-        This portal implements state-of-the-art statistical and machine learning techniques 
-        for reconstructing incomplete Gamma-Ray Burst (GRB) light curves — a critical step 
-        toward precision cosmology using GRBs as standard candles.
-        """)
-
-        # Maths-heavy section
-        with st.container(border=True):
-            st.markdown("### Core Mathematical Framework")
-            
-            st.latex(r"""
-            \log_{10} F(t) \quad \text{reconstructed via models trained on } 
-            \log_{10} t \in [\log_{10} t_{\min}, \log_{10} t_{\max}]
-            """)
-            
-            st.markdown("**Models Implemented:**")
-            cols = st.columns(3)
-            with cols[0]:
-                st.markdown("**1. Attention U-Net**")
-                st.latex(r"\text{Encoder-Decoder with Attention Gates}")
-            with cols[1]:
-                st.markdown("**2. Quartic Smoothing Spline**")
-                st.latex(r"s = N \cdot \lambda, \quad k=4")
-            with cols[2]:
-                st.markdown("**3. Cubic Smoothing Spline**")
-                st.latex(r"s = N, \quad k=3 \quad \text{(UnivariateSpline)}")
-
-        st.markdown("""
-        **Key Features:**
-        - Gap-aware reconstruction grid  
-        - Best-fit noise distribution (Normal / Laplace)  
-        - Synthetic error propagation  
-        - 95% confidence regions  
-        - High-resolution PDF export + combined CSV
-        """)
-
-        st.info("🎨 **Select a model from the sidebar** to begin reconstruction on GRB 231210B or your own dataset.")
-        
-        st.caption("Built for precision cosmology • Journal of High Energy Astrophysics (2025)")
 
 # --- AUTHENTICATION ---
 def check_password():
@@ -202,7 +126,110 @@ if paper_model_select == "Model 2: Quartic Smoothing Spline (QSS)":
 
 
 
+# ===================================================================
+# ADD THIS EXACT BLOCK RIGHT AFTER YOUR SIDEBAR CONTROLS
+# (After the line: if paper_model_select == "Model 2: ...":  ... conf_s_mult = ...)
+# ===================================================================
 
+if paper_model_select == "None":
+    
+    # ====================== WELCOME PAGE (Colourful + Serious + Maths-Heavy) ======================
+    st.markdown("""
+    <h1 style="text-align:center; background: linear-gradient(90deg, #00ff9d, #00b8ff); 
+               -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+               font-size: 3.2rem; margin-bottom: 0;">
+        🌌 Multi-Model GRB Reconstructor
+    </h1>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<h3 style='text-align:center; color:#aaaaaa;'>Advanced Light-Curve Reconstruction Laboratory</h3>", 
+                unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # Intro
+    st.markdown("""
+    <div style="background:#1e1e2e; padding:25px; border-radius:12px; border:1px solid #00ff9d;">
+    <strong>Welcome to the GRB Research Portal.</strong><br><br>
+    This secure platform implements three peer-reviewed models for reconstructing incomplete 
+    <strong>Gamma-Ray Burst (GRB)</strong> light curves, enabling precise cosmological studies 
+    via the Dainotti relation and Willingale functional form.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### Select a model from the sidebar to begin reconstruction")
+    
+    # Three model preview cards (colourful yet serious)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("""
+        <div style="background:#1e1e2e; padding:20px; border-radius:12px; text-align:center; border:2px solid #00ff9d;">
+        <h4 style="color:#00ff9d;">Model 1</h4>
+        <strong>Attention U-Net</strong><br>
+        <small>1D encoder-decoder with attention gates</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div style="background:#1e1e2e; padding:20px; border-radius:12px; text-align:center; border:2px solid #00b8ff;">
+        <h4 style="color:#00b8ff;">Model 2</h4>
+        <strong>Quartic Smoothing Spline</strong><br>
+        <small>k=4 • s = N × multiplier</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div style="background:#1e1e2e; padding:20px; border-radius:12px; text-align:center; border:2px solid #ff00aa;">
+        <h4 style="color:#ff00aa;">Model 3</h4>
+        <strong>Cubic Smoothing Spline</strong><br>
+        <small>k=3 • s = N (exact SciPy implementation)</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # MATHS-HEAVY SECTION
+    with st.expander("📐 Mathematical Framework & Key Equations", expanded=True):
+        st.markdown("**Core transformations used across all models**")
+        
+        st.latex(r"""
+        \log_{10} t \quad \text{and} \quad \log_{10} F(t) \quad \text{(log-log space)}
+        """)
+        
+        st.latex(r"""
+        \text{Error propagation:}\quad 
+        \sigma_{\log F} = \frac{\sigma_F}{F \cdot \ln 10}
+        """)
+        
+        st.markdown("**Smoothing Splines (Models 2 & 3)**")
+        st.latex(r"""
+        \text{UnivariateSpline}(x_{\text{norm}}, y_{\text{norm}}, \; k=3\;\text{or}\;4, \; s=N)
+        """)
+        
+        st.markdown("**Confidence Interval (95%)**")
+        st.latex(r"""
+        \mu \pm 1.96 \sigma_{\text{resid}}
+        """)
+        
+        st.markdown("**Dainotti Relation (improved by reconstruction)**")
+        st.latex(r"""
+        \log L_a = a + b \log T_a + \epsilon
+        """)
+        
+        st.markdown("**Willingale et al. (2007) functional form**")
+        st.latex(r"""
+        F(t) = F_0 \left( \frac{t}{T_a} \right)^{-\alpha} 
+        \left[ 1 + \left( \frac{t}{T_a} \right)^{\alpha - \beta} \right]^{-1}
+        """)
+        
+        st.caption("All models fill data gaps while preserving statistical properties for cosmological parameter estimation.")
+    
+    # Final call-to-action
+    st.info("👈 Choose **Model 1**, **Model 2**, or **Model 3** from the sidebar to launch the reconstruction pipeline.")
+    
+    st.stop()   # ← IMPORTANT: stops execution so the "Run" buttons don't appear when None is selected
 
 
 run_paper_btn = False
