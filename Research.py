@@ -49,6 +49,86 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+
+
+# ====================== WELCOME / LANDING PAGE WHEN NONE SELECTED ======================
+if paper_model_select == "None":
+    st.markdown("""
+        <style>
+        .welcome-title {
+            font-size: 3.2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #00ff9d, #00b8ff, #9d4edd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .welcome-subtitle {
+            font-size: 1.4rem;
+            color: #a0a0a0;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .math-box {
+            background: rgba(30, 30, 40, 0.8);
+            border: 1px solid #00ff9d;
+            border-radius: 12px;
+            padding: 1.8rem;
+            margin: 1.5rem 0;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown('<h1 class="welcome-title">Multi-Model GRB Light Curve Reconstructor</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="welcome-subtitle">Advanced Reconstruction of Gamma-Ray Burst Temporal Profiles</p>', unsafe_allow_html=True)
+
+        st.divider()
+
+        st.markdown("""
+        ### Welcome to the Laboratory
+        
+        This portal implements state-of-the-art statistical and machine learning techniques 
+        for reconstructing incomplete Gamma-Ray Burst (GRB) light curves — a critical step 
+        toward precision cosmology using GRBs as standard candles.
+        """)
+
+        # Maths-heavy section
+        with st.container(border=True):
+            st.markdown("### Core Mathematical Framework")
+            
+            st.latex(r"""
+            \log_{10} F(t) \quad \text{reconstructed via models trained on } 
+            \log_{10} t \in [\log_{10} t_{\min}, \log_{10} t_{\max}]
+            """)
+            
+            st.markdown("**Models Implemented:**")
+            cols = st.columns(3)
+            with cols[0]:
+                st.markdown("**1. Attention U-Net**")
+                st.latex(r"\text{Encoder-Decoder with Attention Gates}")
+            with cols[1]:
+                st.markdown("**2. Quartic Smoothing Spline**")
+                st.latex(r"s = N \cdot \lambda, \quad k=4")
+            with cols[2]:
+                st.markdown("**3. Cubic Smoothing Spline**")
+                st.latex(r"s = N, \quad k=3 \quad \text{(UnivariateSpline)}")
+
+        st.markdown("""
+        **Key Features:**
+        - Gap-aware reconstruction grid  
+        - Best-fit noise distribution (Normal / Laplace)  
+        - Synthetic error propagation  
+        - 95% confidence regions  
+        - High-resolution PDF export + combined CSV
+        """)
+
+        st.info("🎨 **Select a model from the sidebar** to begin reconstruction on GRB 231210B or your own dataset.")
+        
+        st.caption("Built for precision cosmology • Journal of High Energy Astrophysics (2025)")
+
 # --- AUTHENTICATION ---
 def check_password():
     """Returns `True` if the user had the correct password."""
