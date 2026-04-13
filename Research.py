@@ -74,7 +74,7 @@ paper_model_select = st.sidebar.selectbox("Select Paper Model",
                                           ["None", 
                                            "Model 1: Attention U-Net (GRB 231210B)",
                                            "Model 2: Quartic Smoothing Spline (QSS)",
-                                           "Model 3: Coming Soon"],key="model_selector_primary")
+                                           "Model 3: Cubic Smoothing Spline (CSS)"],key="model_selector_primary")
 
 
 # 2. Define global hyperparameters
@@ -97,7 +97,6 @@ if paper_model_select == "Model 2: Quartic Smoothing Spline (QSS)":
 
 
 
-
 run_paper_btn = False
 if paper_model_select == "Model 1: Attention U-Net (GRB 231210B)":
     dataset_url = st.sidebar.text_input("Dataset URL (GitHub Raw)", 
@@ -108,6 +107,11 @@ elif paper_model_select == "Model 2: Quartic Smoothing Spline (QSS)":
         value="https://raw.githubusercontent.com/Devanik21/Bi-LSTM-light-curve-reconstruction-sample/refs/heads/main/GRB%20Data/GRB231210B_trimmed.csv",
         key="qss_url")
     run_paper_btn = st.sidebar.button("Run Paper Model 2", type="primary")
+elif paper_model_select == "Model 3: Cubic Smoothing Spline (CSS)":
+    dataset_url = st.sidebar.text_input("Dataset URL (GitHub Raw)", 
+        value="https://raw.githubusercontent.com/Devanik21/Bi-LSTM-light-curve-reconstruction-sample/refs/heads/main/GRB%20Data/GRB231210B_trimmed.csv",
+        key="css_url")
+    run_paper_btn = st.sidebar.button("Run Paper Model 3", type="primary")
 
 if run_paper_btn and paper_model_select == "Model 1: Attention U-Net (GRB 231210B)":
     st.subheader("Paper Model 1: Attention U-Net on GRB 231210B")
@@ -706,3 +710,256 @@ abstract = {Mitigating data gaps in Gamma-ray bursts (GRBs) light curves (LCs) i
 }""", language="tex")
     
     train_qss()
+
+
+elif run_paper_btn and paper_model_select == "Model 3: Cubic Smoothing Spline (CSS)":
+    st.subheader("Paper Model 3: Cubic Smoothing Spline on GRB 231210B")
+    
+    with st.expander("Methodology Overview", expanded=True):
+        st.markdown("""
+        **Abstract:** This model applies a **Cubic (k=3) Smoothing Spline** to approximate the GRB light curve. 
+        It uses `UnivariateSpline(k=3, s=N)` (exact implementation from the attached `copy_(for_steamlit_)_of_css_github_1a.py` file) 
+        for an optimal balance between data fidelity and smoothness.
+        
+        **Key Features:** Gap-aware reconstruction grid, best-fit noise distribution (Normal/Laplace), synthetic error bars, 95% CI.
+        """)
+    
+    def train_css():
+        with st.spinner("Loading data and training Cubic Smoothing Spline..."):
+            start_time = time.time()
+            # --- 1. Load Data ---
+            try:
+                if "username/repo" in dataset_url:
+                    st.warning("Using placeholder URL. Please update the Dataset URL in the sidebar.")
+                    t_mock = np.logspace(1, 5, 50)
+                    f_mock = 1e-10 * (t_mock**-1.5) * (1 + 0.1*np.random.randn(50))
+                    trimmed_data = pd.DataFrame({
+                        't': t_mock, 'flux': f_mock, 
+                        'pos_flux_err': 0.1*f_mock, 'neg_flux_err': 0.1*f_mock,
+                        'pos_t_err': 0.01*t_mock, 'neg_t_err': 0.01*t_mock
+                    })
+                else:
+                    response = requests.get(dataset_url)
+                    if response.status_code == 200:
+                        trimmed_data = pd.read_csv(io.StringIO(response.text))
+                    else:
+                        st.error(f"Failed to load data: HTTP {response.status_code}")
+                        return
+            except Exception as e:
+                st.error(f"Error: {e}")
+                return
+
+            with st.expander("Inspect Input Data"):
+                st.dataframe(trimmed_data.head(), use_container_width=True)
+                st.caption(f"Loaded {len(trimmed_data)} rows.")
+
+            grb_name = "GRB231210B"
+            
+            # --- 2. Preprocessing (exact logic taken from copy_.py) ---
+            if len(trimmed_data.columns) == 6:
+                trimmed_data.columns = ["t", "pos_t_err", "neg_t_err", "flux", "pos_flux_err", "neg_flux_err"]
+            elif len(trimmed_data.columns) >= 7:
+                trimmed_data.columns = ["0", "t", "pos_t_err", "neg_t_err", "flux", "pos_flux_err", "neg_flux_err"][:len(trimmed_data.columns)]
+            
+            trimmed_data = trimmed_data.sort_values(by="t")
+            ts = trimmed_data["t"].to_numpy()
+            fluxes = trimmed_data["flux"].to_numpy()
+            
+            if "pos_t_err" in trimmed_data.columns:
+                positive_ts_err = trimmed_data["pos_t_err"].to_numpy()
+                negative_ts_err = trimmed_data["neg_t_err"].to_numpy()
+                positive_fluxes_err = trimmed_data["pos_flux_err"].to_numpy()
+                negative_fluxes_err = trimmed_data["neg_flux_err"].to_numpy()
+            else:
+                positive_ts_err = 0.01 * ts
+                negative_ts_err = 0.01 * ts
+                positive_fluxes_err = 0.1 * fluxes
+                negative_fluxes_err = 0.1 * fluxes
+
+            mask = (ts > 0) & (fluxes > 0)
+            ts, fluxes = ts[mask], fluxes[mask]
+            positive_ts_err, negative_ts_err = positive_ts_err[mask], negative_ts_err[mask]
+            positive_fluxes_err, negative_fluxes_err = positive_fluxes_err[mask], negative_fluxes_err[mask]
+
+            log_ts = np.log10(ts)
+            log_fluxes = np.log10(fluxes)
+
+            pos_fluxes = fluxes + positive_fluxes_err
+            neg_fluxes = fluxes + negative_fluxes_err
+            lower_err_log = log_fluxes - np.log10(neg_fluxes)
+            upper_err_log = np.log10(pos_fluxes) - log_fluxes
+            
+            ts_err = (positive_ts_err - negative_ts_err) / 2.0
+            flux_err = (positive_fluxes_err - negative_fluxes_err) / 2.0
+            log_ts_err = ts_err / (ts * np.log(10))
+            log_flux_err = flux_err / (fluxes * np.log(10))
+
+            # --- 3. Normalization ---
+            log_ts_mean = np.mean(log_ts)
+            log_ts_std = np.std(log_ts)
+            log_flux_mean = np.mean(log_fluxes)
+            log_flux_std = np.std(log_fluxes)
+
+            log_ts_norm = (log_ts - log_ts_mean) / log_ts_std
+            log_flux_norm = (log_fluxes - log_flux_mean) / log_flux_std
+
+            # --- 4. Gap-Aware Grid (exact from copy_.py) ---
+            min_gap = 0.05
+            recon_log_t = [log_ts[0]]
+            total_span = log_ts[-1] - log_ts[0]
+            if len(ts) > 500: fraction = 0.05
+            elif len(ts) > 250: fraction = 0.1
+            elif len(ts) > 100: fraction = 0.3
+            else: fraction = 0.4
+            n_points = max(20, int(fraction * len(ts)))
+
+            for i in range(len(ts) - 1):
+                gap_size = log_ts[i+1] - log_ts[i]
+                if gap_size > min_gap:
+                    interval_points = max(2, int(n_points * gap_size / total_span))
+                    interval = np.linspace(log_ts[i], log_ts[i+1], interval_points, endpoint=True)
+                    recon_log_t.extend(interval[1:])
+            
+            recon_log_t = np.array(recon_log_t)
+            recon_t = 10**recon_log_t
+            recon_t = np.unique(recon_t)
+            log_recon_t = np.log10(recon_t).reshape(-1, 1)
+
+            # --- 5. Cubic Smoothing Spline (EXACT from copy_.py) ---
+            N = len(log_ts_norm)
+            spline = UnivariateSpline(
+                x=log_ts_norm.flatten(),
+                y=log_flux_norm.flatten(),
+                k=3,      # ← Cubic (Paper 3)
+                s=N       # ← exact smoothing factor from copy_.py
+            )
+
+            pred_norm_train = spline(log_ts_norm.flatten())
+            resid_norm = log_flux_norm.flatten() - pred_norm_train
+            sigma_resid = np.std(resid_norm)
+
+            # Expand grid for large gaps
+            expanded = log_recon_t.copy()
+            for i in range(len(log_ts) - 1):
+                lowb = log_ts[i]
+                upb = log_ts[i + 1]
+                if np.abs(upb - lowb) >= 0.1:
+                    n_pts = min(5, int(5 * np.abs(upb - lowb) / 0.1))
+                    segment = np.linspace(lowb, upb, num=n_pts).reshape(-1, 1)
+                    expanded = np.vstack((expanded, segment))
+            expanded = np.sort(expanded, axis=0)
+
+            expanded_norm = ((expanded - log_ts_mean) / log_ts_std).flatten()
+
+            mean_norm_recon = spline(expanded_norm)
+            lower_norm_recon = mean_norm_recon - 1.96 * sigma_resid
+            upper_norm_recon = mean_norm_recon + 1.96 * sigma_resid
+
+            mean_denorm_log = (mean_norm_recon * log_flux_std) + log_flux_mean
+            lower_denorm_log = (lower_norm_recon * log_flux_std) + log_flux_mean
+            upper_denorm_log = (upper_norm_recon * log_flux_std) + log_flux_mean
+
+            # Noise & synthetic errors (exact from copy_.py)
+            logfluxerrs = (positive_fluxes_err - negative_fluxes_err) / (2 * fluxes * np.log(10))
+            distributions = [st_scipy.norm, st_scipy.laplace]
+            fits = {}
+            for dist in distributions:
+                params = dist.fit(logfluxerrs)
+                loglikelihood = np.sum(dist.logpdf(logfluxerrs, *params))
+                fits[dist.name] = (params, loglikelihood)
+            
+            best_dist_name = max(fits, key=lambda d: fits[d][1])
+            best_params = fits[best_dist_name][0]
+            best_dist = getattr(st_scipy, best_dist_name)
+
+            rand_noise = [3.5 * (best_dist.rvs(*best_params, size=1)[0] - best_params[0]) 
+                          for _ in range(len(mean_norm_recon))]
+            rand_noise = np.array(rand_noise)
+
+            recon_norm_flux = mean_norm_recon + rand_noise
+            recon_denorm_log = (recon_norm_flux * log_flux_std) + log_flux_mean
+
+            loc_f, scale_f = st_scipy.norm.fit(log_flux_err)
+            sampled_flux_errs = st_scipy.norm(loc=loc_f, scale=scale_f).rvs(size=len(expanded))
+            
+            loc_t, scale_t = st_scipy.norm.fit(log_ts_err)
+            sampled_time_errs = st_scipy.norm(loc=loc_t, scale=scale_t).rvs(size=len(expanded))
+
+            end_time = time.time()
+
+            # --- 6. Plotting (matches exact style of copy_.py + other models) ---
+            test_x_denorm = expanded.flatten()
+            log_reconstructed_flux = recon_denorm_log.flatten()
+            
+            fig = plt.figure(figsize=(10, 6))
+            plt.errorbar(log_ts, log_fluxes, yerr=[lower_err_log, upper_err_log], 
+                         zorder=4, linestyle="", fmt='none', ecolor='gray')
+            plt.errorbar(test_x_denorm, log_reconstructed_flux, 
+                         yerr=np.abs(sampled_flux_errs), linestyle='none', 
+                         marker='o', capsize=5, color='yellow', zorder=3, 
+                         label="Reconstructed Points")
+            plt.scatter(log_ts, log_fluxes, zorder=5, label="Observed Points", color='blue')
+            plt.plot(test_x_denorm, mean_denorm_log, label="Mean Prediction", zorder=2, color='green')
+            plt.fill_between(test_x_denorm, lower_denorm_log, upper_denorm_log, 
+                             alpha=0.5, color='orange', label="95% Confidence Region", zorder=1)
+            
+            plt.legend(loc='lower left')
+            plt.xlabel('log$_{10}$(Time) (s)', fontsize=15)
+            plt.ylabel('log$_{10}$(Flux) ($erg\\,cm^{-2}\\,s^{-1}$)', fontsize=15)
+            plt.title(f'Cubic Smoothing Spline on {grb_name}', fontsize=18)
+            st.pyplot(fig)
+
+            # Downloads
+            fn = f"{grb_name}_cubic_spline_plot.pdf"
+            img = io.BytesIO()
+            plt.savefig(img, format='pdf', bbox_inches='tight')
+            st.download_button(label="Download High-Res Plot (PDF)", data=img, file_name=fn, mime="application/pdf")
+
+            st.markdown("### Performance Metrics")
+            col1, col2 = st.columns(2)
+            col1.metric("Residual Std Dev", f"{sigma_resid:.6f}")
+            col2.metric("Execution Time", f"{end_time - start_time:.2f} s")
+
+            # Combined CSV export (exact same logic as copy_.py)
+            combined_df = trimmed_data.copy(deep=True)
+            new_rows = []
+            for i in range(len(expanded)):
+                logt_pt = expanded[i][0]
+                t_lin = 10 ** logt_pt
+                pos_t_lin = 10 ** (logt_pt + sampled_time_errs[i])
+                neg_t_lin = 10 ** (logt_pt - sampled_time_errs[i])
+                flux_lin = 10 ** recon_denorm_log[i]
+                pos_f_lin = 10 ** (recon_denorm_log[i] + sampled_flux_errs[i])
+                neg_f_lin = 10 ** (recon_denorm_log[i] - sampled_flux_errs[i])
+                new_rows.append({
+                    "t": t_lin,
+                    "pos_t_err": abs(pos_t_lin - t_lin),
+                    "neg_t_err": abs(t_lin - neg_t_lin),
+                    "flux": flux_lin,
+                    "pos_flux_err": abs(pos_f_lin - flux_lin),
+                    "neg_flux_err": abs(flux_lin - neg_f_lin)
+                })
+            new_df = pd.DataFrame(new_rows)
+            combined_df = pd.concat([combined_df, new_df], ignore_index=True)
+            
+            st.success(f"Reconstruction Complete for {grb_name}")
+            csv_buffer = combined_df.to_csv(index=False).encode('utf-8')
+            st.download_button(label="Download Combined Data (CSV)", data=csv_buffer, 
+                               file_name=f"{grb_name}_cubic_spline.csv", mime="text/csv")
+            
+            st.markdown("---")
+            with st.expander("Cite this Implementation"):
+                st.code("""@article{KAUSHAL2025100519,
+title = {Multi-Model Framework for Reconstructing Gamma-Ray Burst Light Curves},
+journal = {Journal of High Energy Astrophysics},
+pages = {100519},
+year = {2025},
+issn = {2214-4048},
+doi = {https://doi.org/10.1016/j.jheap.2025.100519},
+url = {https://www.sciencedirect.com/science/article/pii/S2214404825002009},
+author = {A. Kaushal and ...},
+keywords = {gamma-ray bursts, statistical methods, machine learning, light curve reconstruction},
+abstract = {Mitigating data gaps ... (same as Model 2)}}
+""", language="tex")
+    
+    train_css()
