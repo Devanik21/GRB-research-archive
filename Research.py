@@ -138,7 +138,7 @@ if paper_model_select == "None":
     <h1 style="text-align:center; background: linear-gradient(90deg, #00ff9d, #00b8ff); 
                -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
                font-size: 3.2rem; margin-bottom: 0;">
-        🌌 Multi-Model GRB Reconstructor
+         Multi-Model GRB Reconstructor
     </h1>
     """, unsafe_allow_html=True)
     
