@@ -24,28 +24,31 @@ st.set_page_config(page_title="Multi-Model GRB Reconstructor", layout="wide",pag
 # ====================== CUSTOM NEON GREEN BUTTON STYLE ======================
 st.markdown("""
     <style>
-    /* Target primary buttons (the ones with type="primary") */
-    div.stButton > button[kind="primary"] {
-        background-color: #1a1a1a !important;     /* Dark background */
-        color: #00ff9d !important;                /* Neon green text */
-        border: 2px solid #00ff9d !important;     /* Neon green border */
+    /* Main fix for primary buttons */
+    button[data-testid="baseButton-primary"] {
+        background-color: #1a1a1a !important;
+        color: #00ff9d !important;
+        border: 2px solid #00ff9d !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
-        padding: 0.6rem 1.2rem !important;
+        padding: 10px 24px !important;
+        box-shadow: 0 0 15px rgba(0, 255, 157, 0.5) !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 0 15px rgba(0, 255, 157, 0.4) !important;
     }
-    
-    div.stButton > button[kind="primary"]:hover {
+
+    button[data-testid="baseButton-primary"]:hover {
         background-color: #00ff9d !important;
-        color: #000000 !important;                /* Black text on hover */
-        box-shadow: 0 0 25px rgba(0, 255, 157, 0.8) !important;
-        transform: translateY(-2px);
+        color: #000000 !important;
+        box-shadow: 0 0 25px rgba(0, 255, 157, 0.9) !important;
+        transform: translateY(-1px);
     }
-    
-    /* Optional: Make secondary buttons also look consistent */
-    div.stButton > button {
-        border-radius: 8px !important;
+
+    /* Also style the number input +/- buttons to look consistent (optional) */
+    button[data-testid="stNumberInputStepUp"], 
+    button[data-testid="stNumberInputStepDown"] {
+        border: 1px solid #00ff9d !important;
+        color: #00ff9d !important;
+        background-color: #1a1a1a !important;
     }
     </style>
 """, unsafe_allow_html=True)
