@@ -21,34 +21,30 @@ import time
 # --- CONFIGURATION & SEEDS ---
 st.set_page_config(page_title="Multi-Model GRB Reconstructor", layout="wide",page_icon="🌌")
 
-# ====================== CUSTOM NEON GREEN BUTTON STYLE ======================
+# ====================== NEON GREEN DARK BUTTON (FIXED) ======================
 st.markdown("""
     <style>
-    /* Main fix for primary buttons */
-    button[data-testid="baseButton-primary"] {
+    /* Force ALL primary buttons (the red ones) */
+    button[data-testid="baseButton-primary"],
+    div.stButton > button[kind="primary"],
+    .stButton button[data-baseweb="button"][kind="primary"] {
         background-color: #1a1a1a !important;
         color: #00ff9d !important;
         border: 2px solid #00ff9d !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
-        padding: 10px 24px !important;
-        box-shadow: 0 0 15px rgba(0, 255, 157, 0.5) !important;
+        padding: 12px 28px !important;
+        box-shadow: 0 0 18px rgba(0, 255, 157, 0.6) !important;
         transition: all 0.3s ease !important;
     }
 
-    button[data-testid="baseButton-primary"]:hover {
+    /* Hover effect */
+    button[data-testid="baseButton-primary"]:hover,
+    div.stButton > button[kind="primary"]:hover {
         background-color: #00ff9d !important;
         color: #000000 !important;
-        box-shadow: 0 0 25px rgba(0, 255, 157, 0.9) !important;
-        transform: translateY(-1px);
-    }
-
-    /* Also style the number input +/- buttons to look consistent (optional) */
-    button[data-testid="stNumberInputStepUp"], 
-    button[data-testid="stNumberInputStepDown"] {
-        border: 1px solid #00ff9d !important;
-        color: #00ff9d !important;
-        background-color: #1a1a1a !important;
+        box-shadow: 0 0 30px rgba(0, 255, 157, 0.9) !important;
+        transform: translateY(-2px);
     }
     </style>
 """, unsafe_allow_html=True)
