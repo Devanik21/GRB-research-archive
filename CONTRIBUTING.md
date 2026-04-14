@@ -20,5 +20,5 @@ At this point, you're ready to make your changes.
 
 ## Make a Pull Request
 
-At this point, you should switch back to your master branch and make sure it's up to date with the main repository's master branch.
+At this point, you should switch back to your main branch and make sure it's up to date with the main repository's main branch.
 Then push your branch to GitHub and create a pull request!
