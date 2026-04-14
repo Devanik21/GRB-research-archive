@@ -6,7 +6,7 @@ Please see our documentation for information regarding supported versions of thi
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within this project, please send an e-mail to the maintainers. All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability within this project, please send an e-mail to [security@example.com]. All security vulnerabilities will be promptly addressed.
 
 Please do not report security vulnerabilities through public GitHub issues. Instead, report them privately via email.
 
