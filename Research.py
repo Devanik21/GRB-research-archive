@@ -51,7 +51,7 @@ st.markdown("""
 
 
 
-
+'''
 
 # --- AUTHENTICATION ---
 def check_password():
@@ -95,6 +95,7 @@ def check_password():
 
 if not check_password():
     st.stop()
+  '''
 
 seed_value = 42
 np.random.seed(seed_value)
