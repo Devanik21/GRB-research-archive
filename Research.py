@@ -51,51 +51,6 @@ st.markdown("""
 
 
 
-'''
-
-# --- AUTHENTICATION ---
-def check_password():
-    """Returns `True` if the user had the correct password."""
-
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
-        if st.session_state["password"] == st.secrets["password"]:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # don't store password
-        else:
-            st.session_state["password_correct"] = False
-
-    if st.session_state.get("password_correct", False):
-        return True
-
-    # Detailed and welcoming sign-in page
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        with st.container(border=True):
-            st.markdown("<h1 style='text-align: center; color: #2E86C1;'>GRB Research Portal</h1>", unsafe_allow_html=True)
-            st.markdown("<h3 style='text-align: center;'>Restricted Access</h3>", unsafe_allow_html=True)
-            st.markdown("""
-            You are accessing the **Multi-Model Gamma-Ray Burst Light Curve Reconstructor**.
-            
-            This secure environment provides access to:
-            *   **Attention U-Net** Implementations
-            *   **Quartic Smoothing Spline** Models
-            *   **Advanced Error Analysis**
-            
-            Please verify your credentials to proceed to the laboratory.
-            """)
-            st.divider()
-            st.text_input(
-                "Password", type="password", on_change=password_entered, key="password"
-            )
-            if "password_correct" in st.session_state:
-                st.error("Access Denied: Incorrect Password")
-
-    return False
-
-if not check_password():
-    st.stop()
-  '''
 
 seed_value = 42
 np.random.seed(seed_value)
